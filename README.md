@@ -88,7 +88,6 @@ Examples:
 
 # Execute a custom command on all configured SSH hosts
 ./maint.sh cmd "ls -la /var/log"
-./maint.sh cmd "systemctl status | head -n 5"
 
 # Dry-run mode: preview the update command without execution
 ./maint.sh -n upd
