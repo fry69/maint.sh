@@ -95,7 +95,7 @@ remote() {
         echo "------------------------------- End ---------------------------------"
     else
         # Dry run mode: Show the SSH commands without executing
-        echo "------------------------------ Start (Dry Run) ------------------------------"
+        echo "------------------------------ Start (Dry Run) --------------------------------"
         for host in "${ssh_hosts[@]}"; do
             echo "ssh $host \"$cmd\""
         done

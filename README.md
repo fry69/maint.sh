@@ -7,7 +7,8 @@
 
 ## Features
 
-- Execute basic commands on multiple SSH hosts (up to 10)
+- Concurrent execution of commands on multiple SSH hosts
+- Automatic configuration via parsing SSH config
 - Ping multiple hosts to check connectivity
 - Perform simple maintenance tasks:
   - Check server resources (uname, free memory, disk usage)
