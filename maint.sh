@@ -56,50 +56,51 @@ check_awk() {
 # Function to extract the Hostname from SSH config for a given host
 get_hostname() {
     local host="$1"
-    if [[ $AWK_AVAILABLE -eq 1 ]]; then
-        awk -v host="$host" '
-            $1 == "Host" && $2 == host {found=1; next}
-            found && $1 == "Hostname" {print $2; exit}
-            $1 == "Host" {found=0}
-        ' "$SSH_CONFIG"
-    else
-        echo "$host"
-    fi
+    awk -v host="$host" '
+        $1 == "Host" && $2 == host {found=1; next}
+        found && $1 == "Hostname" {print $2; exit}
+        $1 == "Host" {found=0}
+    ' "$SSH_CONFIG"
 }
 
 # Function to execute remote commands on all SSH hosts
 remote() {
     local cmd="$*"
-    echo "------------------------------ Start --------------------------------"
+    if [[ -z "${dry_run:-}" ]]; then
+        echo "------------------------------ Start --------------------------------"
 
-    # Iterate over each SSH host
-    for host in "${ssh_hosts[@]}"; do
-        if [[ -n "${dry_run:-}" ]]; then
-            echo "ssh $host \"$cmd\""
-        else
+        # Iterate over each SSH host
+        for host in "${ssh_hosts[@]}"; do
             echo "Executing on $host: $cmd"
             # Execute the command in the background and redirect output and error
             ssh "$host" "$cmd" >"$TMP_DIR/out_${host}.log" 2>"$TMP_DIR/err_${host}.log" &
-        fi
-    done
+        done
 
-    # Wait for all background SSH commands to finish
-    wait
+        # Wait for all background SSH commands to finish
+        wait
 
-    # Process and display outputs for each host
-    for host in "${ssh_hosts[@]}"; do
-        echo "------------------------------ $host ------------------------------"
-        if [[ -f "$TMP_DIR/out_${host}.log" ]]; then
-            echo "Standard Output:"
-            cat "$TMP_DIR/out_${host}.log"
-        fi
-        if [[ -s "$TMP_DIR/err_${host}.log" ]]; then
-            echo "Standard Error:"
-            cat "$TMP_DIR/err_${host}.log"
-        fi
-    done
+        # Process and display outputs for each host
+        for host in "${ssh_hosts[@]}"; do
+            echo "------------------------------ $host ------------------------------"
+            if [[ -f "$TMP_DIR/out_${host}.log" ]]; then
+                echo "Standard Output:"
+                cat "$TMP_DIR/out_${host}.log"
+            fi
+            if [[ -s "$TMP_DIR/err_${host}.log" ]]; then
+                echo "Standard Error:"
+                cat "$TMP_DIR/err_${host}.log"
+            fi
+        done
 
-    echo "------------------------------- End ---------------------------------"
+        echo "------------------------------- End ---------------------------------"
+    else
+        # Dry run mode: Show the SSH commands without executing
+        echo "------------------------------ Start (Dry Run) ------------------------------"
+        for host in "${ssh_hosts[@]}"; do
+            echo "ssh $host \"$cmd\""
+        done
+        echo "------------------------------- End (Dry Run) ---------------------------------"
+    fi
 }
 
 # Function to ping all derived hosts
@@ -130,6 +131,9 @@ ping_hosts_func() {
 AWK_AVAILABLE=0
 if check_awk; then
     AWK_AVAILABLE=1
+else
+    echo "Error: 'awk' is not available. Please install awk to use this script." >&2
+    exit 1
 fi
 
 # Ensure the SSH configuration file exists
@@ -165,14 +169,14 @@ fi
 # Derive ping_hosts from ssh_hosts
 declare -a ping_hosts=()
 if [[ $AWK_AVAILABLE -eq 1 ]]; then
-    for host in "${ssh_hosts[@]}"; do
+    while IFS= read -r host; do
         hostname=$(get_hostname "$host")
         if [[ -n "$hostname" ]]; then
             ping_hosts+=("$hostname")
         else
             echo "Warning: No Hostname found for '$host' in SSH config." >&2
         fi
-    done
+    done < <(printf "%s\n" "${ssh_hosts[@]}")
 
     if [[ ${#ping_hosts[@]} -eq 0 ]]; then
         echo "Error: No valid Hostnames found in SSH config for the given ssh_hosts." >&2
