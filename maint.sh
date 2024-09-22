@@ -3,6 +3,21 @@
 # Safety: exit on errors, unset vars, and track errors from pipes
 set -Eeuo pipefail
 
+# Function to check if awk is available
+check_awk() {
+    if command -v awk >/dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Set flag for awk availability
+awk_available=0
+if check_awk; then
+    awk_available=1
+fi
+
 config_file=$HOME/.config/maint.sh/config.sh
 
 if [ -f "$config_file" ]; then
@@ -22,27 +37,35 @@ tmp_dir="/tmp/server_maintenance_$$"  # Unique temp directory based on PID
 # Function to get Hostname from SSH config
 get_hostname() {
     local host="$1"
-    awk -v host="$host" '
-        $1 == "Host" && $2 == host {found=1; next}
-        found && $1 == "Hostname" {print $2; exit}
-        $1 == "Host" {found=0}
-    ' ~/.ssh/config
+    if [ $awk_available -eq 1 ]; then
+        awk -v host="$host" '
+            $1 == "Host" && $2 == host {found=1; next}
+            found && $1 == "Hostname" {print $2; exit}
+            $1 == "Host" {found=0}
+        ' ~/.ssh/config
+    else
+        echo "$host"
+    fi
 }
 
 # Derive ping_hosts from ssh_hosts
 ping_hosts=()
-for host in "${ssh_hosts[@]}"; do
-    hostname=$(get_hostname "$host")
-    if [ -n "$hostname" ]; then
-        ping_hosts+=("$hostname")
-    else
-        echo "Warning: No Hostname found for $host in SSH config" >&2
-    fi
-done
+if [ $awk_available -eq 1 ]; then
+    for host in "${ssh_hosts[@]}"; do
+        hostname=$(get_hostname "$host")
+        if [ -n "$hostname" ]; then
+            ping_hosts+=("$hostname")
+        else
+            echo "Warning: No Hostname found for $host in SSH config" >&2
+        fi
+    done
 
-if [ ${#ping_hosts[@]} -eq 0 ]; then
-    echo "No valid Hostnames found in SSH config for the given ssh_hosts."
-    exit 1
+    if [ ${#ping_hosts[@]} -eq 0 ]; then
+        echo "No valid Hostnames found in SSH config for the given ssh_hosts."
+        exit 1
+    fi
+else
+    ping_hosts=("${ssh_hosts[@]}")
 fi
 
 # Create a temporary directory for output files
@@ -91,6 +114,10 @@ remote() {
 
 # Function to ping hosts
 ping_hosts_func() {
+    if [ $awk_available -eq 0 ]; then
+        echo "Ping functionality is disabled because 'awk' is not available."
+        return
+    fi
     for host in "${ping_hosts[@]}"; do
         ping_command=("ping6" "-q" "-o" "-c" "1" "$host")
         if [[ -n "${dry_run:-}" ]]; then
