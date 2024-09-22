@@ -1,10 +1,9 @@
 # maint.sh - Simple Server Maintenance Script
 
-maint.sh is a basic Bash script designed for simple maintenance tasks across a very small number of servers (less than 10). It provides a quick way to execute common maintenance operations, such as checking resources, updating packages, and rebooting servers when necessary.
+`maint.sh` is a basic Bash script designed for simple maintenance tasks across a very small number of servers (less than 10). It provides a quick way to execute common maintenance operations, such as checking resources, updating packages, and rebooting servers when necessary.
 
-## Important Note
-
-This script is intentionally simple and borderline naive in its approach. It is suitable for personal use or managing a handful of servers. For serious maintenance tasks or larger server fleets, it is strongly recommended to use a more robust tool like Ansible.
+> [!Warning]
+> This script is intentionally simple and borderline naive in its approach. It is suitable for personal use or managing a handful of servers. For serious maintenance tasks or larger server fleets, it is strongly recommended to use a more robust tool like Ansible.
 
 ## Features
 
@@ -16,7 +15,6 @@ This script is intentionally simple and borderline naive in its approach. It is 
   - Reboot servers when required
 - Execute custom commands on remote hosts
 - Dry-run option to preview commands without execution
-- Configurable host lists for SSH and ping operations
 
 ## When to Use This Script
 
@@ -36,62 +34,120 @@ For these scenarios, please consider using Ansible or other professional configu
 
 ## Installation
 
-1. Clone this repository or download the script files.
-2. Run the installation script:
+1. **Download the Script**
 
-```bash
-./install.sh
-```
+   Download the `maint.sh` script and place it somewhere within your `$PATH`. For example, you can place it in your home directory `~/bin`:
 
-This will create a configuration directory at `$HOME/.config/maint.sh` and copy the example configuration file to `config.sh`.
+   ```bash
+   mv maint.sh ~/bin/maint.sh
+   ```
+
+2. **Make the Script Executable**
+
+   Ensure that the script has execute permissions:
+
+   ```bash
+   chmod +x ~/bin/maint.sh
+   ```
+
+## Dependencies
+
+- **`awk`:** The script relies on `awk` for parsing the SSH configuration. Ensure it is installed on your system.
+
+- **SSH Access:** Passwordless SSH access (e.g., via SSH keys) to the managed hosts is recommended for seamless operation.
 
 ## Configuration
 
-Edit the configuration file at `$HOME/.config/maint.sh/config.sh` to set up your SSH and ping hosts:
+Configure your SSH hosts within your `~/.ssh/config` file. The script will automatically derive available ssh hosts from this configuration.
 
-```bash
-ssh_hosts=("server1" "server2" "server3")
-ping_hosts=("server1.example.com" "server2.example.com" "server3.example.com")
+### Sample `~/.ssh/config` Entry
+
+```ssh
+# maint.sh
+Host server1
+    Hostname server1.example.com
+    User root
+
+# maint.sh
+Host server2
+    Hostname server2.example.com
+    User admin
+
+# maint.sh
+Host server3
+    Hostname server3.example.com
+    User deploy
 ```
 
-Replace the example values with your actual server hostnames or IP addresses. Remember, this script is designed for a small number of servers (less than 10).
+> [!NOTE]
+> Only the `Host` entries with the `# maint.sh` comment are recognized and managed by the script.
 
 ## Usage
 
 The script supports the following commands:
 
-```
-Usage: ./maint.sh [ -n ] res | upd | rbt | png | cmd <commands>
+```bash
+Usage: maint.sh [ -n ] res | upd | rbt | sys | png | cmd <commands>
 ```
 
+### Options:
+
 - `-n`: Dry-run mode (preview commands without execution)
+
+### Commands:
+
 - `res`: Check server resources (uname, free memory, disk usage)
 - `upd`: Update and upgrade packages
 - `rbt`: Reboot servers if required
-- `png`: Ping hosts defined in the configuration
+- `sys`: Show SystemD status
+- `png`: Ping hosts defined in the SSH configuration
 - `cmd <commands>`: Execute custom commands on remote hosts
 
-Examples:
+### Examples:
 
-```bash
-# Check resources on all configured SSH hosts
-./maint.sh res
+1. **Check Resources on All Configured SSH Hosts**
 
-# Update packages on all configured SSH hosts
-./maint.sh upd
+   ```bash
+   maint.sh res
+   ```
 
-# Reboot servers if required
-./maint.sh rbt
+2. **Update Packages on All Configured SSH Hosts**
 
-# Ping all configured hosts
-./maint.sh png
+   ```bash
+   maint.sh upd
+   ```
 
-# Execute a custom command on all configured SSH hosts
-./maint.sh cmd "ls -la /var/log"
+3. **Reboot Servers if Required**
 
-# Dry-run mode: preview the update command without execution
-./maint.sh -n upd
-```
+   ```bash
+   maint.sh rbt
+   ```
+
+4. **Show SystemD Status**
+
+   ```bash
+   maint.sh sys
+   ```
+
+5. **Ping All Configured Hosts**
+
+   ```bash
+   maint.sh png
+   ```
+
+6. **Execute a Custom Command on All Configured SSH Hosts**
+
+   ```bash
+   maint.sh cmd "ls -la /var/log"
+   ```
+
+7. **Dry-Run Mode: Preview the Update Command Without Execution**
+
+   ```bash
+   maint.sh -n upd
+   ```
+
+   *Output will display the SSH commands that would be executed without actually running them.*
 
 ## License
 
