@@ -7,9 +7,6 @@ set -Eeuo pipefail
 #          CONFIGURATION       #
 # ============================ #
 
-# Path to the configuration file
-CONFIG_FILE="$HOME/.config/maint.sh/config.sh"
-
 # Path to the SSH configuration
 SSH_CONFIG="$HOME/.ssh/config"
 
@@ -135,17 +132,33 @@ if check_awk; then
     AWK_AVAILABLE=1
 fi
 
-# Load the configuration file
-if [[ -f "$CONFIG_FILE" ]]; then
-    source "$CONFIG_FILE"
-else
-    echo "Error: Configuration file not found at '$CONFIG_FILE'." >&2
+# Ensure the SSH configuration file exists
+if [[ ! -f "$SSH_CONFIG" ]]; then
+    echo "Error: SSH configuration file not found at '$SSH_CONFIG'." >&2
     exit 1
 fi
 
-# Ensure the ssh_hosts variable is set
-if [[ -z "${ssh_hosts+x}" ]]; then
-    echo "Error: 'ssh_hosts' variable not set in the configuration file." >&2
+# Derive ssh_hosts from SSH config: only Host entries preceded by '# maint.sh'
+declare -a ssh_hosts=()
+
+if [[ $AWK_AVAILABLE -eq 1 ]]; then
+    # Parse the SSH config to extract hosts with '# maint.sh' comment
+    ssh_hosts=($(awk '
+        /^# maint.sh$/ {flag=1; next}
+        /^Host / && flag { 
+            for(i=2;i<=NF;i++) if ($i !~ /^#/) print $i
+            flag=0 
+        }
+        /^Host / {flag=0}
+    ' "$SSH_CONFIG"))
+else
+    echo "Error: 'awk' is not available. Cannot parse SSH config." >&2
+    exit 1
+fi
+
+# Check if any ssh_hosts were found
+if [[ ${#ssh_hosts[@]} -eq 0 ]]; then
+    echo "Error: No SSH hosts with '# maint.sh' comment found in '$SSH_CONFIG'." >&2
     exit 1
 fi
 
