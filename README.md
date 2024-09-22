@@ -99,7 +99,7 @@ Usage: maint.sh [ -n ] res | upd | rbt | sys | png | cmd <commands>
 - `res`: Check server resources (uname, free memory, disk usage)
 - `upd`: Update and upgrade packages
 - `rbt`: Reboot servers if required
-- `sys`: Show SystemD status
+- `sys`: Show systemd status
 - `png`: Ping hosts defined in the SSH configuration
 - `cmd <commands>`: Execute custom commands on remote hosts
 
@@ -123,7 +123,7 @@ Usage: maint.sh [ -n ] res | upd | rbt | sys | png | cmd <commands>
    maint.sh rbt
    ```
 
-4. **Show SystemD Status**
+4. **Show systemd Status**
 
    ```bash
    maint.sh sys

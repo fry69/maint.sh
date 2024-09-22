@@ -29,7 +29,7 @@ Commands:
   res           Display system resources.
   upd           Update system packages.
   rbt           Reboot if required.
-  sys           Show SystemD status.
+  sys           Show systemd status.
   png           Ping hosts.
   cmd <command> Execute a custom command on all hosts.
 
