@@ -3,9 +3,20 @@
 # Safety: exit on errors, unset vars, and track errors from pipes
 set -Eeuo pipefail
 
-# Define your SSH and ping hosts
-ssh_hosts=("s1" "s2" "s3")
-ping_hosts=("s1.xyz" "s2.xyz" "s3.xyz")
+config_file=$HOME/.config/maint.sh/config.sh
+
+if [ -f "$config_file" ]; then
+    source $config_file
+else
+    echo "Configuration file not found."
+    exit 1
+fi
+
+if [ -z "${ssh_hosts+x}" -o -z "${ping_hosts+x}" ]; then 
+    echo "Hosts variables not set in configuration file."
+    exit 1
+fi
+
 tmp_dir="/tmp/server_maintenance_$$"  # Unique temp directory based on PID
 
 # Create a temporary directory for output files
