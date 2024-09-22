@@ -12,12 +12,38 @@ else
     exit 1
 fi
 
-if [ -z "${ssh_hosts+x}" -o -z "${ping_hosts+x}" ]; then 
-    echo "Hosts variables not set in configuration file."
+if [ -z "${ssh_hosts+x}" ]; then 
+    echo "ssh_hosts variable not set in configuration file."
     exit 1
 fi
 
 tmp_dir="/tmp/server_maintenance_$$"  # Unique temp directory based on PID
+
+# Function to get Hostname from SSH config
+get_hostname() {
+    local host="$1"
+    awk -v host="$host" '
+        $1 == "Host" && $2 == host {found=1; next}
+        found && $1 == "Hostname" {print $2; exit}
+        $1 == "Host" {found=0}
+    ' ~/.ssh/config
+}
+
+# Derive ping_hosts from ssh_hosts
+ping_hosts=()
+for host in "${ssh_hosts[@]}"; do
+    hostname=$(get_hostname "$host")
+    if [ -n "$hostname" ]; then
+        ping_hosts+=("$hostname")
+    else
+        echo "Warning: No Hostname found for $host in SSH config" >&2
+    fi
+done
+
+if [ ${#ping_hosts[@]} -eq 0 ]; then
+    echo "No valid Hostnames found in SSH config for the given ssh_hosts."
+    exit 1
+fi
 
 # Create a temporary directory for output files
 mkdir -p "$tmp_dir"
