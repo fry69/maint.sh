@@ -147,14 +147,14 @@ declare -a ssh_hosts=()
 
 if [[ $AWK_AVAILABLE -eq 1 ]]; then
     # Parse the SSH config to extract hosts with '# maint.sh' comment
-    ssh_hosts=($(awk '
+    mapfile -t ssh_hosts < <(awk '
         /^# maint.sh$/ {flag=1; next}
         /^Host / && flag { 
             for(i=2;i<=NF;i++) if ($i !~ /^#/) print $i
             flag=0 
         }
         /^Host / {flag=0}
-    ' "$SSH_CONFIG"))
+    ' "$SSH_CONFIG")
 else
     echo "Error: 'awk' is not available. Cannot parse SSH config." >&2
     exit 1
@@ -229,10 +229,10 @@ done
 for ((i=0; i<${#commands[@]}; i++)); do
     case "${commands[i]}" in
         res)
-            remote "uname -a; free -h; echo; df -h /"
+            remote "uname -a && free -h && echo && df -h /"
             ;;
         upd)
-            remote "uname -a; date; sudo apt-get update && sudo apt-get -y dist-upgrade"
+            remote "uname -a && date && sudo DEBIAN_FRONTEND=noninteractive apt-get -q update && DEBIAN_FRONTEND=noninteractive sudo apt-get -q --allow-downgrades --allow-remove-essential --allow-change-held-packages -y dist-upgrade"
             ;;
         rbt)
             remote "if [[ -f /run/reboot-required ]]; then echo 'Rebooting'; sudo shutdown -r now; else echo 'No reboot necessary'; fi"
