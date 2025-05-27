@@ -232,7 +232,7 @@ for ((i=0; i<${#commands[@]}; i++)); do
             remote "uname -a && free -h && echo && df -h /"
             ;;
         upd)
-            remote "uname -a && date && sudo DEBIAN_FRONTEND=noninteractive apt-get -q update && DEBIAN_FRONTEND=noninteractive sudo apt-get -q --allow-downgrades --allow-remove-essential --allow-change-held-packages -y dist-upgrade"
+            remote "uname -a && date && sudo DEBIAN_FRONTEND=noninteractive apt-get -q update && sudo DEBIAN_FRONTEND=noninteractive apt-get -q --allow-downgrades --allow-remove-essential --allow-change-held-packages -y dist-upgrade"
             ;;
         rbt)
             remote "if [[ -f /run/reboot-required ]]; then echo 'Rebooting'; sudo shutdown -r now; else echo 'No reboot necessary'; fi"
